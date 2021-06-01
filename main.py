@@ -93,11 +93,20 @@
 #     # print(measures.euclidean_distance([0, 3, 4, 5], [7, 6, 3, -1]))
 #     # print(measures.jaccard_similarity([0, 1, 2, 5, 6], [0, 2, 3, 5, 7, 9]))
 #     # print(measures.euclidean_distance([1, 1, 0, 0], [1, 1, 1, -1]))
-
+import time
 from math import *
+from dateutil import rrule
 import matplotlib.pyplot as plt
 import numpy
 import csv
+import json
+import os
+import os.path
+import re
+import sys
+import codecs
+from datetime import datetime
+
 
 def print_matrix(mat):
     print('[matrix] width : %d height : %d' % (len(mat[0]), len(mat)))
@@ -207,15 +216,7 @@ def display(s1, s2):
     plt.show()
 
 
-
-# val, path = dtw(s1, s2, dist_for_float)
-
-
-if __name__ == "__main__":
-    s1 = [1, 2, 3, 4, 5, 5, 5, 4]
-    s2 = [3, 4, 5, 5, 5, 4]
-    s2 = [1, 2, 3, 4, 5, 5]
-    # s2 = [2, 3, 4, 5, 5, 5]
+def try_1st():
     csv_reader = csv.reader(open("./reformat/000002.csv", 'r', encoding='gbk'))
     n = 0
     data_set_1 = []
@@ -244,3 +245,61 @@ if __name__ == "__main__":
             data_set_2.append(float(row[4]))
         # print(data_set_2)
     display(data_set_1, data_set_2)
+
+
+def csv_to_json():
+    path = './reformat/'
+    files = os.listdir(path)
+    data = []
+    for file in files:
+        # print(file.title())
+        with open('./reformat/' + file.title(), encoding='gbk') as f:
+            is_first = True
+            dic = {}
+            detailed = []
+            for line in f:
+                line = list(line.split(','))
+                dict = {}
+                if is_first:
+                    is_first = False
+                else:
+                    dic['股票代码'] = line[0]
+                    dic['名称'] = line[1]
+                    # print(line[2])
+                    # dict['开始日期'] = time.strptime(line[2], '%Y-%m-%d')
+                    # dict['结束日期'] = time.strptime(line[3], '%Y-%m-%d')
+                    dict['开始日期'] = line[2]
+                    dict['结束日期'] = line[3]
+                    if line[4] == 'None\n':
+                        dict['涨幅'] = 0.0
+                    else:
+                        dict['涨幅'] = float(line[4])
+                if dict != {}:
+                    detailed.append(dict)
+            dic['变动信息'] = detailed
+        data.append(dic)
+        print(dic)
+    with open('./reformed_data.json', 'w', encoding='utf8') as f:
+        json.dump(data, f)
+    dic_from_json = open('./reformed_data.json', 'r')
+    info_data = json.load(dic_from_json)
+    with open('./reformed_data.json', "w", encoding='utf8') as ff:
+        json.dump(info_data, ff, ensure_ascii=False)
+
+
+def split_by_date():
+    # data = []
+    # dic_from_json = open('reformed_data.json', 'r')
+    # info_data = json.load(dic_from_json)
+    # print(type(info_data))
+    string_test_1 = "2021-04-01"
+    string_test_2 = "2021-06-01"
+    time_1 = time.strptime(string_test_1, "%Y-%m-%d")
+    time_2 = time.strptime(string_test_2, "%Y-%m-%d")
+    # print(type(time_1.tm_mday))
+    months = rrule.rrule(freq=rrule.MONTHLY, dtstart=datetime(time_1.tm_year, time_1.tm_mon, time_1.tm_mday), until=datetime(time_2.tm_year, time_2.tm_mon, time_2.tm_mday))
+    print(months.count())
+
+if __name__ == "__main__":
+    # csv_to_json()
+    split_by_date()
