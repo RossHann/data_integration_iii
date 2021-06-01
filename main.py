@@ -277,7 +277,8 @@ def csv_to_json():
                 if dict != {}:
                     detailed.append(dict)
             dic['变动信息'] = detailed
-        data.append(dic)
+        if dic['变动信息'] != []:
+            data.append(dic)
         print(dic)
     with open('./reformed_data.json', 'w', encoding='utf8') as f:
         json.dump(data, f)
@@ -292,13 +293,65 @@ def split_by_date():
     # dic_from_json = open('reformed_data.json', 'r')
     # info_data = json.load(dic_from_json)
     # print(type(info_data))
-    string_test_1 = "2021-04-01"
-    string_test_2 = "2021-06-01"
-    time_1 = time.strptime(string_test_1, "%Y-%m-%d")
-    time_2 = time.strptime(string_test_2, "%Y-%m-%d")
-    # print(type(time_1.tm_mday))
-    months = rrule.rrule(freq=rrule.MONTHLY, dtstart=datetime(time_1.tm_year, time_1.tm_mon, time_1.tm_mday), until=datetime(time_2.tm_year, time_2.tm_mon, time_2.tm_mday))
-    print(months.count())
+    # string_test_1 = "2021-04-01"
+    # string_test_2 = "2021-06-01"
+    # time_1 = time.strptime(string_test_1, "%Y-%m-%d")
+    # time_2 = time.strptime(string_test_2, "%Y-%m-%d")
+    # # print(type(time_1.tm_mday))
+    # months = rrule.rrule(freq=rrule.MONTHLY, dtstart=datetime(time_1.tm_year, time_1.tm_mon, time_1.tm_mday), until=datetime(time_2.tm_year, time_2.tm_mon, time_2.tm_mday))
+    # print(months.count())
+    data = []
+    dic_from_json = open('reformed_data.json', 'r')
+    info_data = json.load(dic_from_json)
+    need_to_change_starting_point_or_not = True
+    for i in info_data:
+        #         每只股票
+        dic = {}
+        i = dict(i)
+        # print(i)
+        dic['股票代码'] = i['股票代码']
+        dic['名称'] = i['名称']
+        split_change_info = []
+        # period_starting_data = i['变动信息'][0]['开始日期']
+
+        change_info_list = i['变动信息']
+        for ii in change_info_list:
+            #             每条变动信息
+            # print(ii)
+            if need_to_change_starting_point_or_not:
+                period_starting_data = ii['开始日期']
+                need_to_change_starting_point_or_not = False
+                temp = []
+            start_date = time.strptime(ii['开始日期'], '%Y-%m-%d')
+            end_date = time.strptime(ii['结束日期'], '%Y-%m-%d')
+            temp.append(ii['涨幅'])
+            # print(temp)
+            # print(ii['涨幅'])
+            if how_many_days_in_between(time.strptime(period_starting_data, '%Y-%m-%d'), end_date) >= 91:
+                need_to_change_starting_point_or_not = True
+                split_change_info.append(temp)
+                print(temp)
+
+        need_to_change_starting_point_or_not = True
+
+        dic['变动信息'] = split_change_info
+        data.append(dic)
+    with open('./reformed_data_version_2.json', 'w', encoding='utf8') as f:
+        json.dump(data, f)
+    dic_from_json = open('./reformed_data_version_2.json', 'r')
+    info_data = json.load(dic_from_json)
+    with open('./reformed_data_version_2.json', "w", encoding='utf8') as ff:
+        json.dump(info_data, ff, ensure_ascii=False)
+
+
+def string_to_time(str):
+    return time.strptime(str, "%Y-%m-%d")
+
+
+def how_many_days_in_between(earlier, later):
+    return rrule.rrule(freq=rrule.DAILY, dtstart=datetime(earlier.tm_year, earlier.tm_mon, earlier.tm_mday),
+                       until=datetime(later.tm_year, later.tm_mon, later.tm_mday)).count()
+
 
 if __name__ == "__main__":
     # csv_to_json()

@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/1.json" charset="US-ASCII" />
     <file url="file://$PROJECT_DIR$/README.md" charset="US-ASCII" />
     <file url="file://$PROJECT_DIR$/main.py" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/reformat/000002.csv" charset="GBK" />
     <file url="file://$PROJECT_DIR$/reformat/000003.csv" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/reformat/000004.csv" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/reformat/002376.csv" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/reformat/002378.csv" charset="GBK" />
+    <file url="file://$PROJECT_DIR$/reformat/003040.csv" charset="GBK" />
     <file url="file://$PROJECT_DIR$/reformed_data.json" charset="US-ASCII" />
-    <file url="file://$PROJECT_DIR$/reformed_data.json" charset="US-ASCII" />
+    <file url="file://$PROJECT_DIR$/s.json" charset="US-ASCII" />
+    <file url="file://$PROJECT_DIR$/t.json" charset="US-ASCII" />
   </component>
 </project>
