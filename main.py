@@ -186,6 +186,7 @@ def dtw(s1, s2, dist_func):
             break
 
     # print_matrix(mat)
+    # print(retval)
 
     return retval, sorted(path)
 
@@ -204,7 +205,7 @@ def display(s1, s2):
     mat = numpy.array(mat)
 
     plt.subplot(2, 2, 2)
-    c = plt.pcolor(mat, edgecolors='k', linewidths=4000)
+    c = plt.pcolor(mat, edgecolors='k', linewidths=10)
     plt.title('Dynamic Time Warping (%f)' % val)
 
     plt.subplot(2, 2, 1)
@@ -212,38 +213,41 @@ def display(s1, s2):
 
     plt.subplot(2, 2, 4)
     plt.plot(range(len(s1)), s1, 'r')
-    plt.savefig('./test.png')
+    # plt.savefig('./best_matches/result' + str(id) + '.png')
+    plt.savefig('test.png')
     plt.show()
 
 
 def try_1st():
-    csv_reader = csv.reader(open("./reformat/000002.csv", 'r', encoding='gbk'))
-    n = 0
-    data_set_1 = []
-    for row in csv_reader:
-        if n == 0:
-            n += 1
-            continue
-        else:
-            n += 1
-            if row[4] == 'None':
-                continue
-            data_set_1.append(float(row[4]))
-
-    csv_reader = csv.reader(open("./reformat/000004.csv", 'r', encoding='gbk'))
-    n = 0
-    data_set_2 = []
-    for row in csv_reader:
-        if n == 0:
-            n += 1
-            continue
-        else:
-            n += 1
-            # print(row[4])
-            if row[4] == 'None':
-                continue
-            data_set_2.append(float(row[4]))
-        # print(data_set_2)
+    # csv_reader = csv.reader(open("./reformat/000002.csv", 'r', encoding='gbk'))
+    # n = 0
+    # data_set_1 = []
+    # for row in csv_reader:
+    #     if n == 0:
+    #         n += 1
+    #         continue
+    #     else:
+    #         n += 1
+    #         if row[4] == 'None':
+    #             continue
+    #         data_set_1.append(float(row[4]))
+    #
+    # csv_reader = csv.reader(open("./reformat/000004.csv", 'r', encoding='gbk'))
+    # n = 0
+    # data_set_2 = []
+    # for row in csv_reader:
+    #     if n == 0:
+    #         n += 1
+    #         continue
+    #     else:
+    #         n += 1
+    #         # print(row[4])
+    #         if row[4] == 'None':
+    #             continue
+    #         data_set_2.append(float(row[4]))
+    #     # print(data_set_2)
+    data_set_1 = [1, 1]
+    data_set_2 = [1, 10]
     display(data_set_1, data_set_2)
 
 
@@ -312,29 +316,32 @@ def split_by_date():
         dic['股票代码'] = i['股票代码']
         dic['名称'] = i['名称']
         split_change_info = []
+        temp_dic = {}
         # period_starting_data = i['变动信息'][0]['开始日期']
 
         change_info_list = i['变动信息']
         for ii in change_info_list:
             #             每条变动信息
             # print(ii)
+
             if need_to_change_starting_point_or_not:
                 period_starting_data = ii['开始日期']
                 need_to_change_starting_point_or_not = False
                 temp = []
-            start_date = time.strptime(ii['开始日期'], '%Y-%m-%d')
-            end_date = time.strptime(ii['结束日期'], '%Y-%m-%d')
+            # start_date = time.strptime(ii['开始日期'], '%Y-%m-%d')
+            # end_date = time.strptime(ii['结束日期'], '%Y-%m-%d')
             temp.append(ii['涨幅'])
             # print(temp)
             # print(ii['涨幅'])
-            if how_many_days_in_between(time.strptime(period_starting_data, '%Y-%m-%d'), end_date) >= 91:
+            if len(temp) >= 12:
                 need_to_change_starting_point_or_not = True
-                split_change_info.append(temp)
-                print(temp)
+                temp_dic.update({period_starting_data + '_' + ii['结束日期']: temp})
+                # split_change_info.append(temp_dic)
+                print(temp_dic)
 
         need_to_change_starting_point_or_not = True
 
-        dic['变动信息'] = split_change_info
+        dic['变动信息'] = temp_dic
         data.append(dic)
     with open('./reformed_data_version_2.json', 'w', encoding='utf8') as f:
         json.dump(data, f)
@@ -353,6 +360,65 @@ def how_many_days_in_between(earlier, later):
                        until=datetime(later.tm_year, later.tm_mon, later.tm_mday)).count()
 
 
+def try_2nd():
+    dic_from_json = open('reformed_data_version_2.json', 'r')
+    info_data = json.load(dic_from_json)
+    stock_1 = info_data[0]['变动信息']['2020-12-07_2021-03-05']
+    # print(stock_1)
+    current_best = 9999.0
+    index = []
+    for i in range(1, len(info_data)):
+        for ii in info_data[i]['变动信息'].items():
+            # print(info_data[i]['名称'], end=':')
+            # print(info_data[i]['变动信息'][ii])
+            # print(ii[1])
+            temp_ = dtw(stock_1, ii[1], dist_for_float)[0]
+            print(current_best)
+            print(index)
+            if temp_ <= current_best:
+                current_best = temp_
+                index = [i, ii[0]]
+                print(index)
+
+    # display(stock_1, info_data[index[0]]['变动信息'][index[1]])
+
+
+def finding_closest():
+    result_set = []
+    dic_from_json = open('reformed_data_version_2.json', 'r')
+    info_data = json.load(dic_from_json)
+    for i in range(0, len(info_data) - 1):
+        # 每支股票的最新三个月的变动信息
+        temp_best = 99999
+        temp_best_conbo = []
+        change_info = info_data[i]['变动信息']
+        if change_info != []:
+            latest_feature = info_data[i]['变动信息'][-1]
+            for ii in range(0, len(info_data) - 1):
+                # 与除了自己的每只股票相比较
+                if ii != i:
+                    current_in_comparison = info_data[ii]['变动信息']
+                    for iii in range(0, len(info_data[ii]['变动信息']) - 1):
+                        # 每只股票的每个周期
+                        print(info_data[i]['名称'], end=':')
+                        print(info_data[ii]['名称'], end=':')
+                        print(info_data[ii]['变动信息'][iii])
+                        temp_result = dtw(info_data[ii]['变动信息'][iii], latest_feature, dist_for_float)[0]
+                        if temp_result <= temp_best:
+                            temp_best = temp_result
+                            temp_best_conbo = [i, ii, iii]
+        else:
+            continue
+
+        result_set.append(temp_best_conbo)
+    for i in range(0, len(temp_best_conbo) - 1):
+        display(info_data[temp_best_conbo[0]]['变动信息'][-1], info_data[temp_best_conbo[1]['变动信息'][2]], i)
+
+
 if __name__ == "__main__":
     # csv_to_json()
     split_by_date()
+    # try_1st()
+    # try_2nd()
+    # finding_closest()
+    # print(dtw([1, 1, 1, 1, 1], [1, 10, 1, 1, 1], dist_for_float)[0])
