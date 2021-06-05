@@ -316,7 +316,7 @@ def split_by_date():
         dic['股票代码'] = i['股票代码']
         dic['名称'] = i['名称']
         split_change_info = []
-        temp_dic = {}
+        # temp_dic = {}
         # period_starting_data = i['变动信息'][0]['开始日期']
 
         change_info_list = i['变动信息']
@@ -328,6 +328,7 @@ def split_by_date():
                 period_starting_data = ii['开始日期']
                 need_to_change_starting_point_or_not = False
                 temp = []
+                temp_dic = {}
             # start_date = time.strptime(ii['开始日期'], '%Y-%m-%d')
             # end_date = time.strptime(ii['结束日期'], '%Y-%m-%d')
             temp.append(ii['涨幅'])
@@ -335,14 +336,17 @@ def split_by_date():
             # print(ii['涨幅'])
             if len(temp) >= 12:
                 need_to_change_starting_point_or_not = True
-                temp_dic.update({period_starting_data + '_' + ii['结束日期']: temp})
-                # split_change_info.append(temp_dic)
+                temp_dic[period_starting_data + '_' + ii['结束日期']] = temp
+                split_change_info.append(temp_dic)
                 print(temp_dic)
 
         need_to_change_starting_point_or_not = True
 
-        dic['变动信息'] = temp_dic
+        dic['变动信息'] = split_change_info
         data.append(dic)
+    # for i in data:
+    #     if i['变动信息'] != []:
+    #         change_info = i['变动信息'].remove(i['变动信息'][-1])
     with open('./reformed_data_version_2.json', 'w', encoding='utf8') as f:
         json.dump(data, f)
     dic_from_json = open('./reformed_data_version_2.json', 'r')
@@ -360,65 +364,143 @@ def how_many_days_in_between(earlier, later):
                        until=datetime(later.tm_year, later.tm_mon, later.tm_mday)).count()
 
 
+def getSingleDictionaryKey(object):
+    for i in dict(object).keys():
+        result = i
+    return result
+
+
+def getSingleDictionaryValue(object):
+    for i in dict(object).values():
+        result = i
+    return result
+
+
 def try_2nd():
+    nodes = []
+    edges = []
     dic_from_json = open('reformed_data_version_2.json', 'r')
     info_data = json.load(dic_from_json)
-    stock_1 = info_data[0]['变动信息']['2020-12-07_2021-03-05']
+    stock_1_date = getSingleDictionaryKey(info_data[0]['变动信息'][-1])
+    stock_1_data = getSingleDictionaryValue(info_data[0]['变动信息'][-1])
+    dictn = {}
+    dicte = {}
+    dictn['name'] = info_data[0]['名称']
+    dictn['uuid'] = info_data[0]['股票代码']
+    # print(stock_1_date)
+    # print(stock_1_data)
     # print(stock_1)
     current_best = 9999.0
     index = []
     for i in range(1, len(info_data)):
-        for ii in info_data[i]['变动信息'].items():
+        for ii in range(0, len(info_data[i]['变动信息']) - 1):
             # print(info_data[i]['名称'], end=':')
             # print(info_data[i]['变动信息'][ii])
             # print(ii[1])
-            temp_ = dtw(stock_1, ii[1], dist_for_float)[0]
+            temp_ = dtw(stock_1_data, getSingleDictionaryValue(info_data[i]['变动信息'][ii]), dist_for_float)[0]
             print(current_best)
             print(index)
             if temp_ <= current_best:
                 current_best = temp_
-                index = [i, ii[0]]
+                index = [i, ii, getSingleDictionaryKey(info_data[i]['变动信息'][ii])]
                 print(index)
-
+    #
+    dictn['img'] = getSingleDictionaryValue(info_data[index[0]]['变动信息'][index[1] + 1])
+    dictn['nextData'] = getSingleDictionaryValue(info_data[index[0]]['变动信息'][index[1] + 1])[:3]
+    target = info_data[index[0]]['变动信息'][index[1]]
+    dicte['sourceName'] = info_data[0]['名称']
+    dicte['targetName'] = info_data[index[0]]['名称']
+    dicte['sourceId'] = info_data[0]['股票代码']
+    dicte['targetId'] = info_data[index[0]]['股票代码']
+    dicte['sourceDate'] = getSingleDictionaryKey(info_data[0]['变动信息'][-1])
+    dicte['targetDate'] = index[2]
+    dicte['sourceImg'] = getSingleDictionaryValue(info_data[0]['变动信息'][-1])
+    dicte['targetImg'] = getSingleDictionaryValue(info_data[index[0]]['变动信息'][index[1]])
+    dicte['value'] = current_best
+    nodes.append(dictn)
+    edges.append(dicte)
+    with open('./nodes.json', 'w', encoding='utf8') as f:
+        json.dump(nodes, f)
+    dic_from_json = open('./nodes.json', 'r')
+    info_data = json.load(dic_from_json)
+    with open('./nodes.json', "w", encoding='utf8') as ff:
+        json.dump(info_data, ff, ensure_ascii=False)
+    with open('./edges.json', 'w', encoding='utf8') as f:
+        json.dump(edges, f)
+    dic_from_json = open('./edges.json', 'r')
+    info_data = json.load(dic_from_json)
+    with open('./edges.json', "w", encoding='utf8') as ff:
+        json.dump(info_data, ff, ensure_ascii=False)
     # display(stock_1, info_data[index[0]]['变动信息'][index[1]])
 
 
 def finding_closest():
-    result_set = []
+    indexes = []
+    nodes = []
+    edges = []
     dic_from_json = open('reformed_data_version_2.json', 'r')
     info_data = json.load(dic_from_json)
-    for i in range(0, len(info_data) - 1):
+    for i in range(0, len(info_data)):
         # 每支股票的最新三个月的变动信息
-        temp_best = 99999
-        temp_best_conbo = []
+        current_best = 99999
+        index = []
+        dictn = {}
+        dicte = {}
+        dictn['name'] = info_data[i]['名称']
+        dictn['uuid'] = info_data[i]['股票代码']
         change_info = info_data[i]['变动信息']
         if change_info != []:
-            latest_feature = info_data[i]['变动信息'][-1]
-            for ii in range(0, len(info_data) - 1):
-                # 与除了自己的每只股票相比较
-                if ii != i:
-                    current_in_comparison = info_data[ii]['变动信息']
-                    for iii in range(0, len(info_data[ii]['变动信息']) - 1):
-                        # 每只股票的每个周期
-                        print(info_data[i]['名称'], end=':')
-                        print(info_data[ii]['名称'], end=':')
-                        print(info_data[ii]['变动信息'][iii])
-                        temp_result = dtw(info_data[ii]['变动信息'][iii], latest_feature, dist_for_float)[0]
-                        if temp_result <= temp_best:
-                            temp_best = temp_result
-                            temp_best_conbo = [i, ii, iii]
+            latest_feature = getSingleDictionaryValue(info_data[i]['变动信息'][-1])
         else:
             continue
 
-        result_set.append(temp_best_conbo)
-    for i in range(0, len(temp_best_conbo) - 1):
-        display(info_data[temp_best_conbo[0]]['变动信息'][-1], info_data[temp_best_conbo[1]['变动信息'][2]], i)
+        for ii in range(0, len(info_data)):
+            # 与除了自己的每只股票相比较
+            if ii != i:
+                current_in_comparison = info_data[ii]['变动信息']
+                for iii in range(0, len(current_in_comparison) - 1):
+                    # 每只股票的每个周期
+                    print(info_data[i]['名称'], end=':')
+                    print(info_data[ii]['名称'], end=':')
+                    print(info_data[ii]['变动信息'][iii])
+                    temp_result = \
+                        dtw(getSingleDictionaryValue(info_data[ii]['变动信息'][iii]), latest_feature, dist_for_float)[0]
+                    if temp_result <= current_best:
+                        current_best = temp_result
+                        index = [ii, iii, getSingleDictionaryKey(info_data[ii]['变动信息'][iii])]
+        dictn['nextData'] = getSingleDictionaryValue(info_data[index[0]]['变动信息'][index[1] + 1])[:3]
+        dictn['img'] = getSingleDictionaryValue(info_data[index[0]]['变动信息'][index[1] + 1])
+        dicte['sourceName'] = info_data[i]['名称']
+        dicte['targetName'] = info_data[index[0]]['名称']
+        dicte['sourceId'] = info_data[i]['股票代码']
+        dicte['targetId'] = info_data[index[0]]['股票代码']
+        dicte['sourceDate'] = getSingleDictionaryKey(info_data[i]['变动信息'][-1])
+        dicte['targetDate'] = index[2]
+        dicte['sourceImg'] = getSingleDictionaryValue(info_data[i]['变动信息'][-1])
+        dicte['targetImg'] = getSingleDictionaryValue(info_data[index[0]]['变动信息'][index[1]])
+        dicte['value'] = current_best
+        # result_set.append(temp_best_conbo)
+        indexes.append(index)
+        nodes.append(dictn)
+        edges.append(dicte)
+    with open('./nodes.json', 'w', encoding='utf8') as f:
+        json.dump(nodes, f)
+    dic_from_json = open('./nodes.json', 'r')
+    info_data = json.load(dic_from_json)
+    with open('./nodes.json', "w", encoding='utf8') as ff:
+        json.dump(info_data, ff, ensure_ascii=False)
+    with open('./edges.json', 'w', encoding='utf8') as f:
+        json.dump(edges, f)
+    dic_from_json = open('./edges.json', 'r')
+    info_data = json.load(dic_from_json)
+    with open('./edges.json', "w", encoding='utf8') as ff:
+        json.dump(info_data, ff, ensure_ascii=False)
 
 
 if __name__ == "__main__":
     # csv_to_json()
-    split_by_date()
+    # split_by_date()
     # try_1st()
     # try_2nd()
-    # finding_closest()
+    finding_closest()
     # print(dtw([1, 1, 1, 1, 1], [1, 10, 1, 1, 1], dist_for_float)[0])
