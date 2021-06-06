@@ -131,3 +131,5 @@ dmypy.json
 # Big file
 reformed_data.json
 reformed_data_version_2.json
+edges.json
+nodes.json
